@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -171,7 +171,7 @@ td input,td select{padding:9px 10px;font-size:15px}
           </div>
           <div>
             <label>Preco padrao (opcional)</label>
-            <input id="catalogPrice" type="number" min="0" step="0.01" placeholder="R$" inputmode="decimal">
+            <input id="catalogPrice" type="text" placeholder="Ex: 12,90" inputmode="decimal">
             <div id="catalogPriceHint" class="gram-hint" style="display:none">Informe o preco por kg</div>
           </div>
         </div>
@@ -204,7 +204,7 @@ td input,td select{padding:9px 10px;font-size:15px}
           </div>
           <div>
             <label>Preco inicial (opcional)</label>
-            <input id="manualPrice" type="number" min="0" step="0.01" placeholder="R$" inputmode="decimal">
+            <input id="manualPrice" type="text" placeholder="Ex: 12,90" inputmode="decimal">
             <div id="manualPriceHint" class="gram-hint" style="display:none">Informe o preco por kg</div>
           </div>
         </div>
@@ -264,6 +264,11 @@ td input,td select{padding:9px 10px;font-size:15px}
       return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c];
     });
   }
+  // Aceita virgula OU ponto como separador decimal (padrao brasileiro)
+  function parseNum(s) {
+    if(s===null||s===""||s===undefined) return NaN;
+    return parseFloat(String(s).replace(/\./g,"").replace(",","."));
+  }
   var unitLabel = {unidade:"un.", kg:"kg", g:"g", litro:"L"};
   function priceLabel(unit) {
     if(unit==="g") return "R$/kg (ref.)";
@@ -304,7 +309,7 @@ td input,td select{padding:9px 10px;font-size:15px}
   }
   function rowSubtotal(r) {
     if(r.buy!=="sim") return 0;
-    var q=Number(r.qty), p=Number(r.price);
+    var q=parseNum(r.qty), p=parseNum(r.price);
     if(!q||q<=0||isNaN(p)||p<0) return 0;
     return r.unit==="g" ? (q/1000)*p : q*p;
   }
@@ -344,19 +349,19 @@ td input,td select{padding:9px 10px;font-size:15px}
       return;
     }
     body.innerHTML = state.rows.map(function(r,i) {
-      var gramHint = r.unit==="g" ? '<div class="gram-hint">'+(r.qty?(Number(r.qty)/1000).toFixed(3):"0")+'kg x preco/kg</div>' : "";
+      var gramHint = r.unit==="g" ? '<div class="gram-hint">'+(r.qty?(parseNum(r.qty)/1000).toFixed(3):"0")+'kg x preco/kg</div>' : "";
       var step = r.unit==="g"?"1":"0.001";
       return '<tr class="'+(r.buy==="sim"?"buy-yes":"buy-no")+'">'
         +'<td class="product">'+esc(r.name)+'<div class="meta">'+(r.source==="preset"?"Predefinido":"Avulso")+'</div></td>'
         +'<td><select data-field="buy" data-index="'+i+'"><option value="nao"'+(r.buy==="nao"?" selected":"")+'>Nao</option><option value="sim"'+(r.buy==="sim"?" selected":"")+'>Sim</option></select></td>'
-        +'<td><input data-field="qty" data-index="'+i+'" type="number" min="0" step="'+step+'" value="'+esc(r.qty)+'" placeholder="0" inputmode="decimal"></td>'
+        +'<td><input data-field="qty" data-index="'+i+'" type="text" value="'+esc(r.qty)+'" placeholder="0" inputmode="decimal"></td>'
         +'<td><select data-field="unit" data-index="'+i+'">'
           +'<option value="unidade"'+(r.unit==="unidade"?" selected":"")+'>Unidade</option>'
           +'<option value="kg"'+(r.unit==="kg"?" selected":"")+'>Kg</option>'
           +'<option value="g"'+(r.unit==="g"?" selected":"")+'>Gramas</option>'
           +'<option value="litro"'+(r.unit==="litro"?" selected":"")+'>Litro</option>'
         +'</select></td>'
-        +'<td><input data-field="price" data-index="'+i+'" type="number" min="0" step="0.01" value="'+esc(r.price)+'" placeholder="'+priceLabel(r.unit)+'" inputmode="decimal">'+gramHint+'</td>'
+        +'<td><input data-field="price" data-index="'+i+'" type="text" value="'+esc(r.price)+'" placeholder="'+priceLabel(r.unit)+'" inputmode="decimal">'+gramHint+'</td>'
         +'<td class="price-cell">'+money.format(rowSubtotal(r))+'</td>'
         +'<td>'+(r.source==="manual"?'<button class="remove-row" data-remove="'+i+'" title="Remover">&times;</button>':'')+'</td>'
         +'</tr>';
@@ -374,7 +379,7 @@ td input,td select{padding:9px 10px;font-size:15px}
     var container = $("mobileRows");
     if(!state.rows.length) { container.innerHTML='<div class="empty">Cadastre produtos ou adicione um produto avulso.</div>'; return; }
     container.innerHTML = state.rows.map(function(r,i) {
-      var gramHint = r.unit==="g"?'<div class="gram-hint" style="margin-top:4px">'+(r.qty?(Number(r.qty)/1000).toFixed(3):"0")+'kg x preco/kg</div>':"";
+      var gramHint = r.unit==="g"?'<div class="gram-hint" style="margin-top:4px">'+(r.qty?(parseNum(r.qty)/1000).toFixed(3):"0")+'kg x preco/kg</div>':"";
       var step = r.unit==="g"?"1":"0.001";
       return '<div class="mobile-row-card '+(r.buy==="sim"?"buy-yes":"buy-no")+'">'
         +'<div class="mrow-header"><div><div class="mrow-name">'+esc(r.name)+'</div><div class="mrow-source">'+(r.source==="preset"?"Predefinido":"Avulso")+'</div></div>'
@@ -390,8 +395,8 @@ td input,td select{padding:9px 10px;font-size:15px}
             +'<option value="g"'+(r.unit==="g"?" selected":"")+'>Gramas (g)</option>'
             +'<option value="litro"'+(r.unit==="litro"?" selected":"")+'>Litro</option>'
           +'</select></div>'
-          +'<div class="mrow-field"><label>Quantidade</label><input data-field="qty" data-index="'+i+'" type="number" min="0" step="'+step+'" value="'+esc(r.qty)+'" placeholder="0" inputmode="decimal"></div>'
-          +'<div class="mrow-field"><label>'+priceLabel(r.unit)+'</label><input data-field="price" data-index="'+i+'" type="number" min="0" step="0.01" value="'+esc(r.price)+'" placeholder="R$" inputmode="decimal">'+gramHint+'</div>'
+          +'<div class="mrow-field"><label>Quantidade</label><input data-field="qty" data-index="'+i+'" type="text" value="'+esc(r.qty)+'" placeholder="0" inputmode="decimal"></div>'
+          +'<div class="mrow-field"><label>'+priceLabel(r.unit)+'</label><input data-field="price" data-index="'+i+'" type="text" value="'+esc(r.price)+'" placeholder="R$" inputmode="decimal">'+gramHint+'</div>'
         +'</div>'
         +(r.source==="manual"?'<div class="mrow-actions"><button class="btn btn-red small-btn" data-remove="'+i+'" style="font-size:12px;padding:6px 12px">Remover</button></div>':"")
         +'</div>';
@@ -412,7 +417,7 @@ td input,td select{padding:9px 10px;font-size:15px}
     clearStatus();
     var name=$("catalogName").value.trim(), unit=$("catalogUnit").value;
     var rawPrice=$("catalogPrice").value.trim();
-    var defaultPrice=rawPrice===""?"":Number(rawPrice);
+    var defaultPrice=rawPrice===""?"":parseNum(rawPrice);
     if(!name){setStatus("Digite o nome do produto.","warn");return;}
     if(defaultPrice!==""&&(isNaN(defaultPrice)||defaultPrice<0)){setStatus("Preco padrao invalido.","warn");return;}
     if(state.catalog.some(function(p){return p.name.toLowerCase()===name.toLowerCase()&&p.id!==editingId;})){
@@ -457,7 +462,7 @@ td input,td select{padding:9px 10px;font-size:15px}
     clearStatus();
     var name=$("manualName").value.trim(),unit=$("manualUnit").value;
     var rawPrice=$("manualPrice").value.trim();
-    var price=rawPrice===""?"":Number(rawPrice);
+    var price=rawPrice===""?"":parseNum(rawPrice);
     if(!name){setStatus("Digite o nome do produto.","warn");return;}
     state.rows.push({id:uid(),catalogId:null,name:name,source:"manual",buy:"sim",qty:"",unit:unit,price:price});
     $("manualName").value="";$("manualUnit").value="unidade";$("manualPrice").value="";
@@ -475,10 +480,10 @@ td input,td select{padding:9px 10px;font-size:15px}
   function finishPurchase() {
     var chosen=selectedRows();
     if(!chosen.length){setStatus("Marque pelo menos um produto como Sim antes de finalizar.","warn");return;}
-    var valid=chosen.filter(function(r){var q=Number(r.qty),p=Number(r.price);return q>0&&!isNaN(p)&&p>=0;});
+    var valid=chosen.filter(function(r){var q=parseNum(r.qty),p=parseNum(r.price);return q>0&&!isNaN(p)&&p>=0;});
     if(valid.length!==chosen.length){setStatus("Algum item marcado como Sim esta sem quantidade ou preco valido.","warn");return;}
     var snap={id:uid(),finishedAt:new Date().toISOString(),
-      items:valid.map(function(r){return {name:r.name,qty:Number(r.qty),unit:r.unit,price:Number(r.price),subtotal:rowSubtotal(r),source:r.source};}),
+      items:valid.map(function(r){return {name:r.name,qty:parseNum(r.qty),unit:r.unit,price:parseNum(r.price),subtotal:rowSubtotal(r),source:r.source};}),
       total:total()};
     state.history.push(snap);save();renderAll();setStatus("Compra finalizada! Total: "+money.format(snap.total)+".","ok");
   }
